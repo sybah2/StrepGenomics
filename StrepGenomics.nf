@@ -67,15 +67,12 @@ process spades_assembly {
 
     output:
     path("${sample_id}"), emit: assemblies
-    tuple val("${sample_id}"), path("${sample_id}_contigs.fasta"), emit: fasta
-    path("${sample_id}_contigs.fasta"), emit: mlst_fasta
+    tuple val("${sample_id}"), path("${sample_id}.fasta"), emit: fasta
+    path("${sample_id}.fasta"), emit: mlst_fasta
 
     script:
-
-    """
-    spades.py -k 21,33,55,77 --pe1-1 ${reads[0]}  --pe1-2 ${reads[1]} --careful -o ${sample_id}
-    cp ${sample_id}/contigs.fasta ${sample_id}_contigs.fasta
-    """
+    template 'spades.bash'
+    
 }
 
 process mlst_check {
@@ -92,10 +89,7 @@ process mlst_check {
 
     script:
 
-    """
-    mlst --scheme ${scheme} --novel Novel_alleles --nopath  ${fasta_files} > MLST.txt
-    """
-
+    template 'mlst.bash'
 
 }
 
@@ -105,15 +99,14 @@ process abricate {
 
     input:
     path(fasta)
+    val(database)
 
     output:
 
     script:
 
-    """
-    abricate --db vfdb --quiet ${fasta} > AMR.txt
-    abricate --summary AMR.txt > summary.txt
-    """
+    template 'abricate.bash'
+
 }
 
 process prokka {
@@ -133,10 +126,8 @@ process prokka {
 
     script:
 
-    """
-    prokka --outdir ${sample_id} --addgenes  --genus ${genus} --species ${spps}  --usegenus --force  --prefix ${sample_id} ${assembly}
+    template 'prokka.bash'
     
-    """
 }
 
 
@@ -149,11 +140,13 @@ workflow {
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
     spades.mlst_fasta.view()
+    
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
+    prokka_out.gff.view()
 
     mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collect())
     
-    abricate(spades.mlst_fasta.collect())
+    abricate(spades.mlst_fasta.collect(), 'vfdb')
 
 }
 
