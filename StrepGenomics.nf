@@ -6,6 +6,7 @@ reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.re
 
 reads_qc = Channel.fromPath("${params.readFoler}/*", checkIfExists: true) 
 
+
 params.result = 'Results'
 
 // fastQC quality control process
@@ -75,6 +76,17 @@ process spades_assembly {
     
 }
 
+
+process quast {
+    input:
+    path(fasta)
+    path(reference)
+
+    script:
+    """
+    quast.py ./Quast/*fasta -r  ${reference} -o AssemblyQC
+    """
+}
 process mlst_check {
 
     publishDir "${params.result}/MLST", mode: 'copy', pattern: "*.txt"
@@ -139,14 +151,16 @@ workflow {
     trimmed_reads = trimming(reads_ch)
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
-    spades.mlst_fasta.view()
+    //spades.mlst_fasta.collect().flatten().view()
+
+    quast_out = quast(spades.mlst_fasta.collect(), params.reference)
     
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
-    prokka_out.gff.view()
+    //prokka_out.gff.view()
 
-    mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collect())
+    mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collect().flatten())
     
-    abricate(spades.mlst_fasta.collect(), 'vfdb')
+    abricate_out = abricate(spades.mlst_fasta.collect(), 'vfdb')
 
 }
 
