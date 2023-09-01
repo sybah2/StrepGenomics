@@ -70,6 +70,7 @@ process spades_assembly {
     path("${sample_id}"), emit: assemblies
     tuple val("${sample_id}"), path("${sample_id}.fasta"), emit: fasta
     path("${sample_id}.fasta"), emit: mlst_fasta
+    val(sample_id), emit: sample_id
 
     script:
     template 'spades.bash'
@@ -81,10 +82,11 @@ process quast {
     input:
     path(fasta)
     path(reference)
+    val(sample_id)
 
     script:
     """
-    quast.py ./Quast/*fasta -r  ${reference} -o AssemblyQC
+    quast.py ${fasta} -r  ${reference} -o ${sample_id}
     """
 }
 process mlst_check {
@@ -151,16 +153,16 @@ workflow {
     trimmed_reads = trimming(reads_ch)
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
-    //spades.mlst_fasta.collect().flatten().view()
+    spades.mlst_fasta.collect().baseName.view()
 
-    quast_out = quast(spades.mlst_fasta.collect(), params.reference)
+    quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
     
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
     //prokka_out.gff.view()
 
-    mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collect().flatten())
+   mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
-    abricate_out = abricate(spades.mlst_fasta.collect(), 'vfdb')
+    //abricate_out = abricate(spades.mlst_fasta.collect(), 'vfdb')
 
 }
 
