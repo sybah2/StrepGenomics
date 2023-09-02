@@ -2,9 +2,9 @@
 nextflow.enable.dsl=2
 
 
-reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.readFoler + '/*_{1,2}.fastq.gz', params.readFoler + '/*_{1,2}.fq.gz'])
+//reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.readFoler + '/*_{1,2}.fastq.gz', params.readFoler + '/*_{1,2}.fq.gz'])
 
-reads_qc = Channel.fromPath("${params.readFoler}/*", checkIfExists: true) 
+//reads_qc = Channel.fromPath("${params.readFoler}/*", checkIfExists: true) 
 
 
 params.result = 'Results'
@@ -84,10 +84,29 @@ process quast {
     path(reference)
     val(sample_id)
 
+    output:
+    path("${sample_id}")
+
     script:
     """
     quast.py ${fasta} -r  ${reference} -o ${sample_id}
     """
+}
+
+process quastMultiqc {
+
+    publishDir "${params.result}/multiqc", mode: 'copy'
+    input:
+    path(qc_files)
+
+    output:
+    path("*multiqc*")
+
+    script:
+    """
+    multiqc ${qc_files}
+    """
+
 }
 process mlst_check {
 
@@ -145,7 +164,14 @@ process prokka {
 }
 
 
-workflow {
+workflow spyGenomics {
+    
+    take:
+    reads_ch
+    reads_qc
+
+    main:
+    
     qc = fastqQulity(reads_qc)
 
     multiqc(qc.collect())
@@ -156,7 +182,8 @@ workflow {
     spades.mlst_fasta.collect().baseName.view()
 
     quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
-    
+    //multiqc(quast_out.collect())
+
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
     //prokka_out.gff.view()
 
