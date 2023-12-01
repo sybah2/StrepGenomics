@@ -2,12 +2,8 @@
 nextflow.enable.dsl=2
 
 
-// fastQC quality control process
-
 process fastqQulity {
 
-    publishDir "${params.result}/QC", mode: 'copy'
-   // container = 'biocontainers/fastqc:v0.11.9_cv7'
     
     input:
     path reads
@@ -21,6 +17,7 @@ process fastqQulity {
 }
 
 process multiqc {
+
 
     publishDir "${params.result}/multiqc", mode: 'copy'
     input:
@@ -51,7 +48,6 @@ process trimming {
 
 process spades_assembly {
 
-    //container = 'staphb/spades'
 
     publishDir "${params.result}/Fasta", mode: 'copy', pattern: "*.fasta"
     publishDir "${params.result}/Assembly", mode: 'copy', pattern: "${sample_id}"
@@ -104,7 +100,6 @@ process quastMultiqc {
 process mlst_check {
 
     publishDir "${params.result}/MLST", mode: 'copy', pattern: "*.txt"
-    //container = 'staphb/mlst'
     
     input:
     val(scheme)
@@ -121,13 +116,11 @@ process mlst_check {
 
 process abricate {
 
-    //container = 'staphb/abricate'
 
     publishDir "${params.result}/AMR_VF", mode: 'copy', pattern: "*.txt"
 
     input:
     path(fasta)
-    val(database)
 
     output:
     path("*txt*")
@@ -141,8 +134,7 @@ process abricate {
 process prokka {
 
     publishDir "${params.result}/Prokka", mode: 'copy', pattern: "${sample_id}"
-
-    //container = 'staphb/prokka'
+    publishDir "${params.result}/GFF", mode: 'copy', pattern: "*.gff"
 
     input:
     tuple val(sample_id), path(assembly)
@@ -178,13 +170,13 @@ workflow spyGenomics {
 
     quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
 
-   quastMultiqc(quast_out.collect())
+    quastMultiqc(quast_out.collect())
 
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
 
-   mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
+    mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
-   abricate_out = abricate(spades.mlst_fasta.collect())
+    abricate_out = abricate(spades.mlst_fasta.collect())
 
 }
 
