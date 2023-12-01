@@ -41,7 +41,7 @@ if (params.local){
       .fromPath([params.reads + '/*.fastq', params.reads + '/*.fastq.gz', params.reads + '/*.fq.gz'])
       .splitFastq( by : params.splitChunk, file:true  )
       */
-      reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.readFoler + '/*_{1,2}.fastq.gz', params.readFoler + '/*_{1,2}.fq.gz'])
+      reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.readFoler + '/*_{1,2}.fastq.gz', params.readFoler + '/*_{1,2}.fq.gz', params.readFoler + '/*_R{1,2}_001.fastq.gz'])
 
       reads_qc = Channel.fromPath("${params.readFoler}/*", checkIfExists: true) 
 } else {

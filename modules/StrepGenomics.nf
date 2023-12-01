@@ -2,19 +2,12 @@
 nextflow.enable.dsl=2
 
 
-//reads_ch = Channel.fromFilePairs([params.readFoler + '/*_{1,2}.fastq', params.readFoler + '/*_{1,2}.fastq.gz', params.readFoler + '/*_{1,2}.fq.gz'])
-
-//reads_qc = Channel.fromPath("${params.readFoler}/*", checkIfExists: true) 
-
-
-params.result = 'Results'
-
 // fastQC quality control process
 
 process fastqQulity {
 
     publishDir "${params.result}/QC", mode: 'copy'
-    container = 'biocontainers/fastqc:v0.11.9_cv7'
+   // container = 'biocontainers/fastqc:v0.11.9_cv7'
     
     input:
     path reads
@@ -95,7 +88,7 @@ process quast {
 
 process quastMultiqc {
 
-    publishDir "${params.result}/multiqc", mode: 'copy'
+    publishDir "${params.result}/Qusts_multiqc", mode: 'copy'
     input:
     path(qc_files)
 
@@ -111,7 +104,7 @@ process quastMultiqc {
 process mlst_check {
 
     publishDir "${params.result}/MLST", mode: 'copy', pattern: "*.txt"
-    container = 'staphb/mlst'
+    //container = 'staphb/mlst'
     
     input:
     val(scheme)
@@ -128,13 +121,16 @@ process mlst_check {
 
 process abricate {
 
-    container = 'staphb/abricate'
+    //container = 'staphb/abricate'
+
+    publishDir "${params.result}/AMR_VF", mode: 'copy', pattern: "*.txt"
 
     input:
     path(fasta)
     val(database)
 
     output:
+    path("*txt*")
 
     script:
 
@@ -146,7 +142,7 @@ process prokka {
 
     publishDir "${params.result}/Prokka", mode: 'copy', pattern: "${sample_id}"
 
-    container = 'staphb/prokka'
+    //container = 'staphb/prokka'
 
     input:
     tuple val(sample_id), path(assembly)
@@ -179,17 +175,16 @@ workflow spyGenomics {
     trimmed_reads = trimming(reads_ch)
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
-    spades.mlst_fasta.collect().baseName.view()
 
     quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
-    //multiqc(quast_out.collect())
+
+   quastMultiqc(quast_out.collect())
 
     prokka_out = prokka(spades.fasta, 'Streptococcus', 'pyogenes')
-    //prokka_out.gff.view()
 
    mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
-    //abricate_out = abricate(spades.mlst_fasta.collect(), 'vfdb')
+   abricate_out = abricate(spades.mlst_fasta.collect())
 
 }
 
