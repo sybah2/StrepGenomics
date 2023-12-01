@@ -32,8 +32,8 @@ if(!params.readFoler) {
 if(!params.reference) {
     throw new Exception("Missing parameter params.annotationName")
   }
-if(!params.results) {
-    throw new Exception("Missing parameter params.results")
+if(!params.result) {
+    throw new Exception("Missing parameter params.result")
   }
 
 if (params.local){
