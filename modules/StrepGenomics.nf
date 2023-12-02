@@ -4,7 +4,8 @@ nextflow.enable.dsl=2
 
 process fastqQulity {
 
-    
+    publishDir "${params.result}/QC", mode: 'copy'   
+ 
     input:
     path reads
 
@@ -143,7 +144,7 @@ process prokka {
 
     output:
     path("${sample_id}"), emit: annotation
-    path("${sample_id}/${sample_id}.gff"), emit: gff
+    path("${sample_id}.gff"), emit: gff
 
     script:
 
@@ -151,6 +152,29 @@ process prokka {
     
 }
 
+
+
+process emmTyping {
+   
+   input:
+   tuple val(sample_id), path(assembly)
+   path(emmDb)
+   //path(outputDir)
+   //val(prefix)
+
+
+   script:
+   template 'emmTyping.bash'
+  // """
+  // perl /home2/sybah/StrepGenomics/bin/my_version_emm_Typer4.pl -z ${assembly} -r ${emmDb} -o ${sample_id} -n ${sample_id}
+
+  // """
+
+
+
+
+
+}
 
 workflow spyGenomics {
     
@@ -177,6 +201,8 @@ workflow spyGenomics {
     mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
     abricate_out = abricate(spades.mlst_fasta.collect())
+
+    emm_typing = emmTyping(spades.fasta, params.emmdb)
 
 }
 
