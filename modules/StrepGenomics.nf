@@ -3,6 +3,8 @@ nextflow.enable.dsl=2
 
 
 process fastqQulity {
+    
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
 
     publishDir "${params.result}/QC", mode: 'copy'   
  
@@ -20,6 +22,7 @@ process fastqQulity {
 process multiqc {
 
 
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/multiqc", mode: 'copy'
     input:
     path(qc_files)
@@ -35,6 +38,9 @@ process multiqc {
 }
 
 process trimming {
+    
+
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     input:
     tuple val(sample_id), path(reads)
 
@@ -50,6 +56,7 @@ process trimming {
 process spades_assembly {
 
 
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/Fasta", mode: 'copy', pattern: "*.fasta"
     publishDir "${params.result}/Assembly", mode: 'copy', pattern: "${sample_id}"
     
@@ -69,6 +76,10 @@ process spades_assembly {
 
 
 process quast {
+    
+
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
+
     input:
     path(fasta)
     path(reference)
@@ -85,6 +96,7 @@ process quast {
 
 process quastMultiqc {
 
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/Qusts_multiqc", mode: 'copy'
     input:
     path(qc_files)
@@ -100,6 +112,7 @@ process quastMultiqc {
 }
 process mlst_check {
 
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/MLST", mode: 'copy', pattern: "*.txt"
     
     input:
@@ -118,6 +131,7 @@ process mlst_check {
 process abricate {
 
 
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/AMR_VF", mode: 'copy', pattern: "*.txt"
 
     input:
@@ -135,6 +149,7 @@ process abricate {
 process prokka {
 
     publishDir "${params.result}/Prokka", mode: 'copy', pattern: "${sample_id}"
+    conda 'home2/sybah/.conda/envs/Enterobacteriaceae_analysis'
     publishDir "${params.result}/GFF", mode: 'copy', pattern: "*.gff"
 
     input:
@@ -156,25 +171,20 @@ process prokka {
 
 process emmTyping {
    
+   publishDir "${params.result}/EMM", mode: 'copy'
    input:
    tuple val(sample_id), path(assembly)
    path(emmDb)
-   //path(outputDir)
-   //val(prefix)
 
+   output:
+   path("${sample_id}")
 
    script:
    template 'emmTyping.bash'
-  // """
-  // perl /home2/sybah/StrepGenomics/bin/my_version_emm_Typer4.pl -z ${assembly} -r ${emmDb} -o ${sample_id} -n ${sample_id}
-
-  // """
-
-
-
-
 
 }
+
+
 
 workflow spyGenomics {
     
@@ -191,7 +201,7 @@ workflow spyGenomics {
     trimmed_reads = trimming(reads_ch)
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
-
+/*
     quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
 
     quastMultiqc(quast_out.collect())
@@ -201,9 +211,8 @@ workflow spyGenomics {
     mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
     abricate_out = abricate(spades.mlst_fasta.collect())
-
+*/
     emm_typing = emmTyping(spades.fasta, params.emmdb)
-
 }
 
 
