@@ -201,7 +201,7 @@ workflow spyGenomics {
     trimmed_reads = trimming(reads_ch)
 
     spades = spades_assembly(trimmed_reads.trimmed_fastqs)
-/*
+
     quast_out = quast(spades.mlst_fasta, params.reference, spades.sample_id)
 
     quastMultiqc(quast_out.collect())
@@ -211,7 +211,7 @@ workflow spyGenomics {
     mlst_result = mlst_check('spyogenes',spades.mlst_fasta.collectFile())
     
     abricate_out = abricate(spades.mlst_fasta.collect())
-*/
+
     emm_typing = emmTyping(spades.fasta, params.emmdb)
 }
 
